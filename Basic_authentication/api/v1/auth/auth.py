@@ -1,4 +1,16 @@
-def require_auth(self, path: str, excluded_paths: List[str]) -> bool:
+#!/usr/bin/env python3
+"""
+Auth module for the API
+"""
+from flask import request
+from typing import List, TypeVar
+
+
+class Auth:
+    """ Template for all authentication systems
+    """
+
+    def require_auth(self, path: str, excluded_paths: List[str]) -> bool:
         """ Returns False if path is in excluded_paths (slash tolerant),
             True otherwise.
         """
@@ -8,7 +20,6 @@ def require_auth(self, path: str, excluded_paths: List[str]) -> bool:
         if excluded_paths is None or not excluded_paths:
             return True
 
-        # Normalize path to ensure slash tolerance
         normalized_path = path if path.endswith('/') else path + '/'
 
         for excluded_path in excluded_paths:
@@ -20,3 +31,13 @@ def require_auth(self, path: str, excluded_paths: List[str]) -> bool:
                 return False
 
         return True
+
+    def authorization_header(self, request=None) -> str:
+        """ Returns None - request will be the Flask request object
+        """
+        return None
+
+    def current_user(self, request=None) -> TypeVar('User'):
+        """ Returns None - request will be the Flask request object
+        """
+        return None
