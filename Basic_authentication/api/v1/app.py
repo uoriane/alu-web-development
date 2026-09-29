@@ -51,3 +51,6 @@ def not_found(error) -> str:
     """ Not found handler
     """
     return jsonify({"error": "Not found"}), 404
+
+if __name__ == "__main__":
+    app.run(host=getenv("API_HOST", "0.0.0.0"), port=getenv("API_PORT", "5000"))
