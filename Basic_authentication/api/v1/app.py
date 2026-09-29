@@ -1,45 +1,53 @@
 #!/usr/bin/env python3
 """
-Auth module for the API
+Route module for the API
 """
-from flask import request
-from typing import List, TypeVar
+from os import getenv
+from api.v1.views import app_views
+from flask import Flask, jsonify, abort, request
+from flask_cors import CORS, cross_origin
+import os
+
+app = Flask(__name__)
+app.register_blueprint(app_views)
+CORS(app, resources={r"/api/v1/*": {"origins": "*"}})
+
+auth = None
+AUTH_TYPE = getenv("AUTH_TYPE")
+
+if AUTH_TYPE == "auth":
+    from api.v1.auth.auth import Auth
+    auth = Auth()
+elif AUTH_TYPE == "basic_auth":
+    from api.v1.auth.basic_auth import BasicAuth
+    auth = BasicAuth()
 
 
-class Auth:
-    """ Template for all authentication systems
+@app.before_request
+def before_request():
+    """ Filter requests before they reach the endpoints
     """
+    if auth is None:
+        return
 
-    def require_auth(self, path: str, excluded_paths: List[str]) -> bool:
-        """ Returns False if path is in excluded_paths (slash tolerant),
-            True otherwise.
-        """
-        if path is None:
-            return True
+    excluded_paths = [
+        '/api/v1/status/',
+        '/api/v1/unauthorized/',
+        '/api/v1/forbidden/'
+    ]
 
-        if excluded_paths is None or not excluded_paths:
-            return True
+    if not auth.require_auth(request.path, excluded_paths):
+        return
 
-        normalized_path = path if path.endswith('/') else path + '/'
+    if auth.authorization_header(request) is None:
+        abort(401)
 
-        for excluded_path in excluded_paths:
-            normalized_excluded = (
-                excluded_path if excluded_path.endswith('/')
-                else excluded_path + '/'
-            )
-            if normalized_path == normalized_excluded:
-                return False
+    if auth.current_user(request) is None:
+        abort(403)
 
-        return True
 
-    def authorization_header(self, request=None) -> str:
-        """ Returns the Authorization header from the request object
-        """
-        if request is None:
-            return None
-        return request.headers.get('Authorization', None)
-
-    def current_user(self, request=None) -> TypeVar('User'):
-        """ Returns None - request will be the Flask request object
-        """
-        return None
+@app.errorhandler(404)
+def not_found(error) -> str:
+    """ Not found handler
+    """
+    return jsonify({"error": "Not found"}), 404
