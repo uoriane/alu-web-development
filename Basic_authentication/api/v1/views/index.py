@@ -32,5 +32,3 @@ def get_forbidden() -> str:
     """ Raises a 403 Forbidden error
     """
     abort(403)
-
-
